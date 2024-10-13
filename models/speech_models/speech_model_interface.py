@@ -4,13 +4,12 @@ An informal interface will be used to ensure abstraction - there is no need for 
 """
 import numpy as np
 
-print("Speech model interface loaded.")
-
 class SpeechModelInterface:
     def __init__(self) -> None:
         '''
         Initialise the speech model with the necessary parameters.
         '''
+        print("Speech model interface loaded.")
         pass
     def transcribe(self, audio: np.array) -> str:
         '''

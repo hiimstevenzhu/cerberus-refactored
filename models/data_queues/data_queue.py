@@ -1,11 +1,10 @@
-print("Data queue loaded.")
-
 from models.data_queues.data_queue_interface import DataQueueInterface
 from queue import Queue
 
 class DataQueue(DataQueueInterface):
     def __init__(self):
         self.data_queue = Queue()
+        print("Data queue loaded.")
     
     def put(self, data):
         self.data_queue.put_nowait(data)

@@ -1,26 +1,37 @@
 import argparse
 import asyncio
 from models.speech_models.speech_models import WhisperSpeechModel as Model
-from models.data_queues.data_queue import DataQueue
 from models.recorder.recorder import Recorder
 from controllers.transcriber import Transcriber
+from controllers.text_processor import TextProcessor
+from controllers.websocket_handler import WebSocketHandler
 
 async def async_main(args):
-    data_queue = DataQueue()
     
+    # Initialise model
     if args.model != "large" and not args.non_english:
         args.model = args.model + ".en"
     model = Model(args.model)
+    
+    # Handle keywords 
+    keywords = ['HELLO', 'KEYWORD', 'TEST']  # Example keyword list
+    cluster_name = 'test_1'
+    
+    # Initialise my controllers
+    text_processor = TextProcessor(cluster_name, keywords=keywords)
+    transcriber = Transcriber(model)
+    websocket_handler = WebSocketHandler(args.websocket_uri)
+    
+    # Start the websocket server
+    await websocket_handler.start_server()
 
-    transcriber = Transcriber(model, data_queue, args.websocket_uri)
-
-    recorder = Recorder(args.energy_threshold, lambda _, audio: data_queue.put(audio.get_raw_data()))
+    recorder = Recorder(args.energy_threshold, lambda _, audio: transcriber.data_queue.put(audio.get_raw_data()))
     recorder.start_recording()
 
+    # Tasks to run concurrently
     tasks = [
         transcriber.collect_audio(),
-        transcriber.transcribe_audio(),
-        transcriber.send_transcription()
+        transcriber.transcribe_and_process(text_processor, websocket_handler)
     ]
 
     await asyncio.gather(*tasks)
